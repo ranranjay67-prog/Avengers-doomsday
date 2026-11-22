@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Avengers: Doomsday — 3D Fan Movie</title>
+<style>
+:root{--gold:#e7b64d;--panel:rgba(5,10,20,.82)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#030712;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+#stage{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 65%,#27354b 0,#0a1425 48%,#02040a 100%)}
+canvas{display:block;width:100%;height:100%}
+#fallback{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff;background:linear-gradient(#111d33,#050812)}
+#hud{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(12px,3vw,28px)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.brand{font-weight:900;letter-spacing:.12em;color:var(--gold);font-size:clamp(12px,2vw,18px);text-shadow:0 2px 12px #000}
+.pill{font-size:11px;letter-spacing:.08em;border:1px solid #ffffff44;border-radius:30px;padding:7px 11px;background:#03071288;color:#dce7f7}
+.bottom{width:min(900px,100%);margin:0 auto}
+.sceneTitle{font-size:clamp(22px,4.5vw,42px);font-weight:900;line-height:1.02;text-shadow:0 3px 18px #000;margin-bottom:8px}
+.dialogue{font-size:clamp(14px,2.2vw,19px);line-height:1.45;color:#e8edf6;text-shadow:0 2px 9px #000;min-height:3em;max-width:850px}
+.controls{pointer-events:auto;display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button,select{border:1px solid #ffffff33;background:var(--panel);color:white;border-radius:12px;padding:11px 15px;font-size:14px;font-weight:650}
+button.primary{background:linear-gradient(135deg,#b98225,#f2cf72);color:#10131a;border:0}
+button:active{transform:scale(.97)}
+.progress{height:4px;background:#ffffff28;border-radius:9px;margin-top:14px;overflow:hidden}
+#bar{height:100%;width:0;background:var(--gold);transition:width .3s}
+.note{font-size:10px;color:#b8c2d2;margin-top:8px}
+#loading{position:absolute;inset:0;display:grid;place-items:center;background:#050a14;color:#f5d17c;z-index:5;letter-spacing:.1em;font-weight:800}
+@media(max-width:600px){#hud{padding:12px}.pill{display:none}.controls button{padding:10px 12px;font-size:12px}.dialogue{min-height:4em}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="fallback"><div><h1>3D view could not load</h1><p>Check your internet connection, then reload this movie. The 3D engine loads from a public library.</p></div></div>
+<div id="loading">PREPARING THE 3D MOVIE…</div>
+<div id="hud">
+ <div class="top"><div class="brand">MARVEL-INSPIRED FAN MOVIE<br><span style="color:#fff;font-size:.8em;letter-spacing:.22em">AVENGERS: DOOMSDAY</span></div><div class="pill">ORIGINAL ALTERNATE-UNIVERSE STORY</div></div>
+ <div class="bottom">
+  <div class="sceneTitle" id="title">The Last Warning</div>
+  <div class="dialogue" id="dialogue">The sky above New York begins to fracture.</div>
+  <div class="controls">
+   <button class="primary" id="play">▶ Play movie</button>
+   <button id="prev">◀ Back</button><button id="next">Next scene ▶</button>
+   <button id="voice">🔊 Voice: on</button>
+   <select id="voiceSelect" aria-label="Choose voice"><option value="">Device default voice</option></select>
+  </div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="note">3D fan-made animated storyboard • Spoken dialogue uses your device’s available text-to-speech voice • Tap Play to enable sound</div>
+ </div>
+</div>
+<div id="loading"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+<script>
+(()=>{
+const loading=document.getElementById('loading'), fallback=document.getElementById('fallback');
+if(!window.THREE){loading.style.display='none';fallback.style.display='flex';return;}
+const THREE=window.THREE, stage=document.getElementById('stage');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x070d1b); scene.fog=new THREE.Fog(0x070d1b,22,75);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,150);camera.position.set(0,5.4,15);camera.lookAt(0,2,0);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xb8d8ff,0x182033,2));
+const key=new THREE.DirectionalLight(0xffe3b0,3);key.position.set(-7,13,9);key.castShadow=true;scene.add(key);
+const rim=new THREE.PointLight(0x397cff,24,35);rim.position.set(7,6,-5);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshStandardMaterial({color:0x101a2b,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-.05;floor.receiveShadow=true;scene.add(floor);
+const city=new THREE.Group();scene.add(city);
+for(let i=0;i<42;i++){let h=3+Math.random()*13,w=1.2+Math.random()*2;let b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),new THREE.MeshStandardMaterial({color:i%3===0?0x263b58:0x17283f,metalness:.35,roughness:.65}));b.position.set((Math.random()-.5)*55,h/2-0.1,-8-Math.random()*25);b.castShadow=true;b.receiveShadow=true;city.add(b);
+ for(let y=1;y<h-1;y+=1.5)for(let x=-w/2+.25;x<w/2-.1;x+=.48){let win=new THREE.Mesh(new THREE.BoxGeometry(.12,.22,.025),new THREE.MeshBasicMaterial({color:Math.random()>.45?0x8ebce8:0x263750}));win.position.set(b.position.x+x,y,b.position.z+w/2+.02);city.add(win);}
+}
+function mat(c,metal=0){return new THREE.MeshStandardMaterial({color:c,metalness:metal,roughness:.42});}
+function part(g,geo,m,x,y,z){let o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;g.add(o);return o;}
+function makeHero(name,color,accent,style){
+ let root=new THREE.Group(), body=new THREE.Group();root.add(body);
+ let main=mat(color,.4), trim=mat(accent,.55), skin=mat(0xc98e70), dark=mat(0x111722);
+ part(body,new THREE.CylinderGeometry(.58,.72,1.45,12),main,0,2.1,0);
+ part(body,new THREE.SphereGeometry(.43,16,12),skin,0,3.22,0);
+ part(body,new THREE.SphereGeometry(.46,16,12),style==='hood'?dark:main,0,3.3,0);
+ if(style==='helmet'){part(body,new THREE.SphereGeometry(.47,16,12,0,Math.PI*2,0,Math.PI*.56),trim,0,3.37,0);part(body,new THREE.BoxGeometry(.52,.1,.08),dark,0,3.25,.39);}
+ if(style==='hood'){let hood=part(body,new THREE.ConeGeometry(.62,1.2,12),dark,0,3.55,-.1);hood.rotation.x=.1;}
+ if(style==='cape'){let cape=part(body,new THREE.BoxGeometry(1.1,1.8,.12),trim,0,2.05,-.5);cape.rotation.x=-.15;}
+ part(body,new THREE.SphereGeometry(.18,12,8),trim,0,2.45,.58);
+ let arms=[],legs=[];
+ for(let s of [-1,1]){let arm=new THREE.Group();arm.position.set(s*.72,2.65,0);body.add(arm);part(arm,new THREE.CylinderGeometry(.16,.2,.95,10),main,0,-.42,0);part(arm,new THREE.SphereGeometry(.2,10,8),trim,0,-.92,.02);arms.push(arm);
+ let leg=new THREE.Group();leg.position.set(s*.3,1.45,0);body.add(leg);part(leg,new THREE.CylinderGeometry(.22,.25,1.05,10),dark,0,-.48,0);part(leg,new THREE.BoxGeometry(.42,.22,.65),trim,0,-1.02,.18);legs.push(leg);}
+ let mouth=part(body,new THREE.SphereGeometry(.085,10,8),mat(0x2a0808),0,3.03,.385);mouth.scale.set(.9,.25,.3);
+ root.userData={body,arms,legs,mouth,name};return root;
+}
+const heroes={
+ Tony:makeHero('Tony',0x9e2630,0xd8a54e,'helmet'),
+ Steve:makeHero('Steve',0x234c8c,0xd7bd79,'helmet'),
+ Thor:makeHero('Thor',0x344b69,0x9ec9e9,'cape'),
+ Peter:makeHero('Peter',0x9e202a,0x275da5,'helmet'),
+ Strange:makeHero('Strange',0x74352d,0xcda65e,'cape'),
+ Doom:makeHero('Doom',0x52645b,0xb8b6a7,'hood'),
+ Hulk:makeHero('Hulk',0x39834b,0x263e32,''),
+ TChalla:makeHero('Black Panther',0x171c2a,0x8a7bc9,'helmet')
+};
+const cast=new THREE.Group();scene.add(cast);Object.values(heroes).forEach(h=>cast.add(h));
+const energy=new THREE.Mesh(new THREE.TorusGeometry(3.1,.09,12,80),new THREE.MeshBasicMaterial({color:0x59baff}));energy.position.set(0,4,-4);energy.rotation.x=Math.PI/2;scene.add(energy);
+const portal=new THREE.Mesh(new THREE.TorusGeometry(2.5,.18,16,80),new THREE.MeshBasicMaterial({color:0x8c45ff}));portal.position.set(0,4,-8);portal.rotation.y=.3;scene.add(portal);
+const scenes=[
+{t:'The Last Warning',d:[['Tony','Something is tearing holes in the sky.'],['Strange','It is not one universe. It is all of them.']],who:['Tony','Strange'],cam:[0,5,16],light:0x397cff},
+{t:'A New Enemy',d:[['Doom','I will end the collapse. Even if I must remake everything.'],['Steve','You do not get to decide the fate of everyone.']],who:['Doom','Steve'],cam:[0,4.5,14],light:0x7b39ff},
+{t:'The Avengers Assemble',d:[['Tony','Avengers, we need a plan. Now.'],['Thor','Then we face this storm together.'],['Peter','I really hope there is a plan.']],who:['Tony','Thor','Peter'],cam:[0,5,15],light:0x3e9eff},
+{t:'The City Falls',d:[['Hulk','HULK SMASH!'],['Black Panther','Get the civilians to safety. I will hold the line.']],who:['Hulk','TChalla'],cam:[0,5,13],light:0xff7a39},
+{t:'Inside the Engine',d:[['Strange','The Infinity Engine is feeding on the fractures.'],['Tony','Then we shut it down from the inside.']],who:['Strange','Tony'],cam:[0,4.5,12],light:0x4bc8ff},
+{t:'Doom’s Offer',d:[['Doom','Join me. I can save every world.'],['Steve','A world without choice is not saved.']],who:['Doom','Steve'],cam:[0,4,12],light:0x9e57ff},
+{t:'The Final Battle',d:[['Thor','For every world that still has a tomorrow!'],['Peter','Everybody ready? Because I am definitely not!']],who:['Thor','Peter'],cam:[0,5,14],light:0xffb33e},
+{t:'The Impossible Choice',d:[['Tony','The engine needs one final surge. I can give it that.'],['Steve','We find another way. Together.']],who:['Tony','Steve'],cam:[0,4.5,12],light:0x54caff},
+{t:'A New Dawn',d:[['Strange','The fractures are closing. We did it.'],['Thor','Then let the worlds remember this day.']],who:['Strange','Thor'],cam:[0,5,15],light:0x5bdbb0},
+{t:'The Watchers',d:[['Doom','You think this is over? You have only delayed the end.']],who:['Doom'],cam:[0,4.5,13],light:0x9c6bff}
+];
+let index=0,playing=false,voiceOn=true,turn=0,clock=new THREE.Clock(),elapsed=0;
+const title=document.getElementById('title'),dialogue=document.getElementById('dialogue'),bar=document.getElementById('bar'),playBtn=document.getElementById('play');
+function clearSpeech(){if('speechSynthesis'in window)speechSynthesis.cancel();}
+function positionCast(){Object.values(heroes).forEach(h=>{h.visible=false;h.position.set(0,0,0);h.rotation.set(0,0,0);});let s=scenes[index];s.who.forEach((n,i)=>{let h=heroes[n];h.visible=true;h.position.set((i-(s.who.length-1)/2)*2.25,0,-1);});}
+function sayLine(){let s=scenes[index];if(turn>=s.d.length){if(playing){setTimeout(()=>{if(playing)nextScene();},1800);}return;}
+ let [who,line]=s.d[turn];dialogue.textContent=who==='TChalla'?'BLACK PANTHER: '+line:who.toUpperCase()+': '+line;
+ Object.values(heroes).forEach(h=>{h.userData.mouth.scale.y=.25;});
+ if(voiceOn&&'speechSynthesis'in window){let u=new SpeechSynthesisUtterance(line);let voices=speechSynthesis.getVoices();let chosen=document.getElementById('voiceSelect').value;u.voice=voices.find(v=>v.name===chosen)||null;u.rate=.92;u.pitch=who==='Hulk'?.65:who==='Doom'?.78:who==='Peter'?1.12:1;u.onstart=()=>{heroes[who].userData.mouth.scale.y=.85;};u.onend=()=>{heroes[who].userData.mouth.scale.y=.25;if(playing){turn++;setTimeout(sayLine,500);}};speechSynthesis.speak(u);}else{turn++;if(playing)setTimeout(sayLine,2400);}
+}
+function showScene(){clearSpeech();turn=0;elapsed=0;let s=scenes[index];title.textContent=s.t;dialogue.textContent=s.d[0][0].toUpperCase()+': '+s.d[0][1];bar.style.width=(index/(scenes.length-1)*100)+'%';positionCast();portal.visible=index===1||index===5||index===9;energy.visible=index===4||index===7;camera.position.set(...s.cam);camera.lookAt(0,2,0);if(playing)sayLine();}
+function nextScene(){if(index<scenes.length-1){index++;showScene();}else{playing=false;playBtn.textContent='↻ Replay movie';dialogue.textContent='The story continues…';clearSpeech();}}
+function play(){if(index===scenes.length-1&& !playing)index=0;playing=true;playBtn.textContent='Ⅱ Pause';sayLine();}
+playBtn.onclick=()=>{if(playing){playing=false;clearSpeech();playBtn.textContent='▶ Resume';}else play();};
+document.getElementById('next').onclick=()=>{if(index<scenes.length-1)index++;else index=0;showScene();};
+document.getElementById('prev').onclick=()=>{index=Math.max(0,index-1);showScene();};
+document.getElementById('voice').onclick=()=>{voiceOn=!voiceOn;document.getElementById('voice').textContent=voiceOn?'🔊 Voice: on':'🔇 Voice: off';if(!voiceOn)clearSpeech();};
+function loadVoices(){let sel=document.getElementById('voiceSelect');if(!('speechSynthesis'in window))return;let vs=speechSynthesis.getVoices();vs.forEach(v=>{let o=document.createElement('option');o.value=v.name;o.textContent=v.name+' ('+v.lang+')';sel.appendChild(o);});}
+if('speechSynthesis'in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+showScene();loading.style.display='none';
+function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.05),t=clock.elapsedTime;
+ Object.values(heroes).forEach((h,i)=>{if(!h.visible)return;let u=h.userData;u.body.position.y=Math.sin(t*2.2+i)*.055;u.arms.forEach((a,j)=>{a.rotation.x=Math.sin(t*2.8+j+i)*.12; a.rotation.z=(j===0?1:-1)*(.08+Math.sin(t*1.8+i)*.06);});u.legs.forEach((l,j)=>{l.rotation.x=Math.sin(t*2.4+j* Math.PI)*.09;});h.rotation.y=Math.sin(t*.7+i)*.08;});
+ portal.rotation.z+=dt*.28;energy.rotation.z-=dt*.35;energy.scale.setScalar(1+Math.sin(t*2)*.035);
+ camera.position.x=Math.sin(t*.18)*.28;camera.position.y= scenes[index].cam[1]+Math.sin(t*.55)*.08;camera.lookAt(0,2,0);
+ renderer.render(scene,camera);
+}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+})();
+</script>
+</body></html>
